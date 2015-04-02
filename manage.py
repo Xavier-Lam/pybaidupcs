@@ -1,5 +1,5 @@
 #encoding:utf8
-
+from __future__ import print_function
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import logging
 import os

@@ -7,7 +7,7 @@ __all__ = [
 	"PostMultiPartFormRequest"
 ]
 
-class File:
+class File(object):
 	"""
 	Explicit the post value if file.
 	"""
@@ -15,7 +15,7 @@ class File:
 		self.filename = filename
 		self.value = value
 
-class RequestBase:
+class RequestBase(object):
 	"""
 	http method class
 	"""

@@ -3,7 +3,7 @@ import os
 
 __all__ = ["Config"]
 
-class ConfigBase:
+class ConfigBase(object):
 	def update(self, configs):
 		for k, v in configs.items():
 			setattr(self, k, v)

@@ -14,7 +14,7 @@ __all__ = [
 	"PostMultiPartFormRequest"
 ]
 
-class ApiClient:
+class ApiClient(object):
 	"""
 	Creating http request or continue mapping instance to restful api.
 	In this case, the content of post http body is multipart/form-data.

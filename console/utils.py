@@ -1,6 +1,6 @@
 #encoding:utf8
 
-class ConsoleColours:
+class ConsoleColours(object):
 	"""
 	help class for console to print colourful text
 	"""

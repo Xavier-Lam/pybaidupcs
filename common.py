@@ -2,7 +2,7 @@
 class ApplicationException(Exception):
 	pass
 
-class CloseableClass:
+class CloseableClass(object):
 	def __enter__(self):
 		return self
 

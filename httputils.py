@@ -3,6 +3,7 @@ try:
 	import http.client as httplib
 except ImportError:
 	import httplib
+	bytes = lambda s, enc: s.encode(enc)
 import mimetypes
 from common import CloseableClass
 

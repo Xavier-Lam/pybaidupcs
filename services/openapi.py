@@ -26,7 +26,7 @@ def apply_auth():
 	yield
 	# main will tell user to confirm and it will take a while
 	# polling to wait server back
-	return polling_tokens(resp["device_code"], resp["interval"], resp["expires_in"])
+	polling_tokens(resp["device_code"], resp["interval"], resp["expires_in"])
 
 def polling_tokens(device_code, interval=5, expires_in=300):
 	"""
@@ -44,7 +44,6 @@ def polling_tokens(device_code, interval=5, expires_in=300):
 			continue
 		# save tokens to harddisk
 		return serialize_tokens(resp)
-		# return tokens
 
 def serialize_tokens(json_obj):
 	"""

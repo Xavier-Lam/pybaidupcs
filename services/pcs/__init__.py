@@ -38,7 +38,7 @@ def safe_path(path):
 	return path.replace('\\', '/').replace("//", '/')\
 		.replace(config.PATHPREFIX, "", 1)
 
-class temp_file:
+class temp_file(object):
 	"""
 	generate a temp file path and delete file when exit
 	"""
