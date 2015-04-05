@@ -4,7 +4,7 @@ import os
 import time
 import webbrowser
 from clients import BaiduOpenApi, BaiduOpenApiException
-from config import TOKENPATH
+from config import config
 
 __all__ = [
 	"apply_auth",
@@ -53,7 +53,7 @@ def serialize_tokens(json_obj):
 	"""
 	# load into memory
 	res = json.dumps(json_obj)
-	with open(TOKENPATH, "w+") as f:
+	with open(config.TOKENPATH, "w+") as f:
 		f.write(res)
 	return json_obj["access_token"], json_obj["refresh_token"]
 
@@ -62,10 +62,10 @@ def deserialize_tokens():
 	return tokens load from disk
 	return access_token, refresh_token
 	"""
-	if not os.path.isfile(TOKENPATH):
+	if not os.path.isfile(config.TOKENPATH):
 		return
 	# if token exists
-	with open(TOKENPATH, "r+") as f:
+	with open(config.TOKENPATH, "r+") as f:
 		context = f.read()
 	try:
 		res = eval(context)

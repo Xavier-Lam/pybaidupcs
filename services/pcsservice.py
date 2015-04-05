@@ -1,52 +1,37 @@
 #encoding:utf8
+from collections import OrderedDict
 from hashlib import md5
 import json
 from math import ceil
 import os
 import time
-try:
-	from urllib.parse import quote
-except ImportError:
-	from urllib import quote
 from clients import *
-from config import PIECE
+from common import CloseableClass
+from config import config
 
-__isfile = lambda content:isinstance(content, str) and os.path.isfile(content)
-
-def safe_path(path, encode=True):
+def restore_path(path):
 	"""
-	add path prefix and replace '/' with %2F
+	add path prefix 
 	"""
-	from config import PATHPREFIX
 	# replace \\ with /
 	path = path.replace('\\', '/')
 	# if path start with / then delete it
 	path = path.lstrip('/')
 	# add prefix
-	path = PATHPREFIX + '/' + path
-	return quote(path, "") if encode else path
+	return config.PATHPREFIX + '/' + path
 
-def delete(path):
+def safe_path(path):
 	"""
-	delete file or directory
+	delete path prefix and replace '\\' with ""
 	"""
-	client = BaiduPCS()
-	return client.pcs.file.post(method="delete", path=safe_path(path, False))
-
-def fileinfo(path):
-	"""
-	get file metainfo
-	"""
-	client = BaiduPCS()
-	resp = client.pcs.file.get(method="meta", path=safe_path(path))
-	return resp["list"][0]
+	return path.replace('\\', "").replace(config.PATHPREFIX, "", 1)
 
 class temp_file:
 	"""
 	generate a temp file path delete file when exit
 	"""
 	def __enter__(self):
-		path = "/__tmp/__tmp_" + str(time.time()).replace('.', '_')
+		path = config.TEMPFOLDER + "/__tmp_" + str(time.time()).replace('.', '_')
 		self.__path = path
 		return self.__path
 
@@ -56,12 +41,35 @@ class temp_file:
 		except:
 			pass
 
+def copy(from_, to):
+	"""
+	copy  file or directory
+	"""
+	client = BaiduPCS()
+	return client.pcs.file.post(**{"method":"copy", 
+		"from":restore_path(from_), "to":restore_path(to)})
+
+def delete(path):
+	"""
+	delete file or directory
+	"""
+	client = BaiduPCS()
+	return client.pcs.file.post(method="delete", path=restore_path(path))
+
+def fileinfo(path):
+	"""
+	get file metainfo
+	"""
+	client = BaiduPCS()
+	resp = client.pcs.file.get(method="meta", path=restore_path(path))
+	return resp["list"][0]
+
 def listfiles(path):
 	"""
 	list files and directories
 	"""
 	client = BaiduPCS()
-	resp = client.pcs.file.get(method="list", path=safe_path(path))
+	resp = client.pcs.file.get(method="list", path=restore_path(path))
 	return resp["list"]
 
 def mkdir(path):
@@ -69,34 +77,34 @@ def mkdir(path):
 	make a directory
 	"""
 	client = BaiduPCS()
-	return client.pcs.file.post(method="mkdir", path=safe_path(path, False))
+	return client.pcs.file.post(method="mkdir", path=restore_path(path))
 
-def upload(localpath, uploadpath, progress_recall=None):
+def move(from_, to):
 	"""
-	judge upload method
+	move file or directory
 	"""
-	# check for rapid upload
-	if check_rapidupload(localpath, uploadpath):
-		return
-	filesize = os.stat(localpath).st_size
-	if filesize > PIECE:
-		md5s = multiupload(localpath, uploadpath, filesize, progress_recall)
-		return combine_files(md5s, uploadpath)
-	else:
-		return __upload(localpath, uploadpath)
+	client = BaiduPCS()
+	return client.pcs.file.post(**{"method":"move",
+		"from":restore_path(from_), "to":restore_path(to)})
 
-def check_rapidupload(localpath, uploadpath):
+def check_rapidupload(c_length, c_md5, s_md5, uploadpath):
 	"""
 	judge whether a file can upload rapidly
+		c_length: content length
+		c_md5: content md5
+		s_md5: slice md5
 	"""
-	info = rapidupload_info(content, c_length)
 	# minimun of content-length is 256KB
-	if info["content-length"] > 256*1024:
+	if c_length > 256*1024:
+		info = {}
+		info["content-length"] = c_length
+		info["content-md5"] = c_md5
+		info["slice-md5"] = s_md5
 		client = BaiduPCS()
 		# return file's md5 if can be rapidupload
 		try:
 			resp = client.pcs.file.post(method="rapidupload", 
-				path=safe_path(uploadpath, False), **info)
+				path=restore_path(uploadpath), **info)
 			return resp["md5"]
 		except BaiduPCSException as e:
 			# if not found return empty string
@@ -115,73 +123,137 @@ def rapidupload_info(localpath):
 		res["slice-md5"], res["content-md5"] = __hashfile(f)
 	return res
 
-class Upload:
+class Upload(CloseableClass):
 	"""
 	upload files
 	"""
 	def __init__(self, localpath, uploadpath):
 		self.localpath = localpath
 		self.uploadpath = uploadpath
+		# progress bar callback
 		self.progress_callback = None
+		# opened file
+		self.f = None
+		# md5 list of slices
+		self.md5s = OrderedDict()
+		# temp md5 list(yet not check sum)
+		self.tmp_md5s = []
+		# temp sum of tmp_md5s
+		self.tmp_md5sum = md5()
 
-	def __call__(self):
+	def __call__(self, force=False):
 		"""
 		do upload
 		"""
 		# check rapid upload first
-		if not check_rapidupload(self.localpath, self.uploadpath):
-			pass
+		info = rapidupload_info(self.localpath)
+		if force or not check_rapidupload(info["content-length"], 
+			info["content-md5"], info["slice-md5"], self.uploadpath):
+			self.filesize = os.stat(self.localpath).st_size
+			self.uploadsize = 0
+			# open file and read
+			self.f = open(self.localpath, "rb")
+			# judge upload method
+			if self.filesize > config.PIECE:
+				return self.__multiupload()
+			else:
+				return self.__singleupload()
 
-def __upload(content, uploadpath):
-	"""
-	upload file direct
-	content is local file path or loaded bytes
-	"""
-	client = BaiduPCS()
-	if __isfile(content):
-		with open(content, "rb") as f:
-			file = File(os.path.split(content)[1], f.read())
-	else:
-		file = File("tmp", content)
-	resp = client.pcs.file.post(method="upload", 
-		path=safe_path(uploadpath), file=file)
-	return resp
+	def close(self):
+		"""
+		close file
+		"""
+		if self.f:
+			self.f.close()
 
-def multiupload(localpath, uploadpath, filesize, progress_recall=None):
-	"""
-	split file into path and upload
-	"""
-	# split into pieces
-	pieces = ceil(filesize/PIECE)
-	md5s = []
-	with open(localpath, "rb") as f:
-		for i in range(pieces):	
-			# return to main and yield some information
-			if progress_recall:progress_recall(i/pieces*100)
-			content = f.read(PIECE)
-			md5s.append(md5(content).hexdigest())
-			# check rapidupload
+	def __singleupload(self):
+		"""
+		upload file direct
+		"""
+		return self.__upload(self.f.read(), self.uploadpath)
+
+	def __multiupload(self):
+		"""
+		split file into parts and upload
+		"""
+		for content, c_md5, s_md5 in self.__getslice():
+			# show upload stat
+			if self.progress_callback:
+				self.progress_callback(self.uploadsize/self.filesize*100)
+			c_length = len(content)
+			# try rapid upload
 			with temp_file() as temppath:
-				if not check_rapidupload(content, temppath):
-					__upload(content, temppath)
-	return md5s
+				if not check_rapidupload(c_length, c_md5, s_md5, temppath):
+					self.__upload_tempfile(content)
+			# add this piece of md5 into dict(md5 dict use in merge file)
+			self.__add_md5_slice(content, c_md5)
+			self.uploadsize = self.uploadsize + c_length
+		# return upload result
+		return self.__merge_file()
 
-def combine_files(md5s, uploadpath):
-	"""
-	combine multi upload files
-	"""
-	client = BaiduPCS()
-	# max acceptable md5 list length is 1024
-	# if length of md5s greater than 1024
-	# combine them first
-	while len(md5s) > 1024:
-		with temp_file() as temppath:
-			new_md5 = combine_files(md5s[:1024])["md5"]
-			del(md5s[:1024])
-			md5s.insert(0, new_md5)
-	resp = client.pcs.file.post(method="createsuperfile", path=safe_path(uploadpath, False), 
-		param=json.dumps({"block_list": md5s}))
-	return resp
+	def __upload(self, content, uploadpath, ondup=None):
+		"""
+		upload file direct
+		ondup = overwrite or newcopy
+		content is local file path or loaded bytes
+		"""
+		file = File(os.path.split(uploadpath)[1], content)
+		client = BaiduPCS()
+		kwargs = dict(method="upload", path=restore_path(uploadpath), file=file)
+		if ondup:
+			kwargs["ondup"] = ondup
+		return client.pcs.file.post(**kwargs)
+
+	def __upload_tempfile(self, content):
+		"""
+		upload temp files
+		"""
+		file = File("tmp", content)
+		client = BaiduPCS()
+		return client.pcs.file.post(method="upload", type="tmpfile", file=file)
+
+	def __getslice(self):
+		"""
+		yield a piece of file
+		return bytes, md5 of slice
+		"""
+		content = self.f.read(config.PIECE)
+		while content:
+			yield content, md5(content).hexdigest(), md5(content[:256*1024]).hexdigest()
+			content = self.f.read(config.PIECE)
+
+	def __add_md5_slice(self, content, slice_md5):
+		"""
+		add md5 slices into dict for merge file
+		"""
+		# if temp list is full 
+		if len(self.tmp_md5s) == config.PIECES:
+			self.__clean_temp_md5s()
+		self.tmp_md5sum.update(content)
+		self.tmp_md5s.append(slice_md5)
+
+	def __clean_temp_md5s(self):
+		"""
+		
+		"""
+		self.md5s[self.tmp_md5sum.hexdigest()] = self.tmp_md5s
+		self.tmp_md5sum = md5()
+		self.tmp_md5s = []
+
+	def __merge_file(self):
+		"""
+		merge file
+		"""
+		self.__clean_temp_md5s()
+		for v in self.md5s.values():
+			with temp_file() as temppath:
+				self.__combine_files(v, temppath)
+		return self.__combine_files(self.md5s.keys(), self.uploadpath)
+
+	def __combine_files(self, md5s, uploadpath):
+		client = BaiduPCS()
+		return client.pcs.file.post(method="createsuperfile", 
+			path=restore_path(uploadpath), param=json.dumps({"block_list": list(md5s)}))
 
 def __hashfile(file, blocksize=4*1024*1024):
 	"""

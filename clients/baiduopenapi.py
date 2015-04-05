@@ -4,7 +4,7 @@ try:
 except ImportError:
 	from httplib import HTTPException
 from clients import ApiClient
-from config import BAIDU_API_KEY, BAIDU_SECRET_KEY
+from config import config
 
 __all__ = [
 	"BaiduOpenApiException",
@@ -31,8 +31,8 @@ class BaiduOpenApi(ApiClient):
 		overwrite get method for add clientid and secretid.
 		and add api prefix /oauth/2.0
 		"""
-		kwargs["client_id"] = BAIDU_API_KEY
-		kwargs["client_secret"] = BAIDU_SECRET_KEY
+		kwargs["client_id"] = config.BAIDU_API_KEY
+		kwargs["client_secret"] = config.BAIDU_SECRET_KEY
 		self.route = "/oauth/2.0" + self.route
 		return super(BaiduOpenApi, self).get(**kwargs)
 

@@ -11,6 +11,16 @@ __all__ = [
 	"BaiduPCSException"
 ]
 
+def safe_quote(arg):
+	"""
+	quote all characters in url params
+	"""
+	try:
+		from urllib.parse import quote
+	except ImportError:
+		from urllib import quote
+	return quote(arg, "")
+
 class File:
 	"""
 	Explicit the post value if file.
@@ -56,6 +66,7 @@ class ApiClient(ClientBase):
 		"""
 		Create a get request.
 		"""
+		kwargs = {k:safe_quote(v) for k, v in kwargs.items()}
 		with HTTPSConnection(self.base_url) as conn:
 			params = params_generate(**kwargs)
 			conn.request("GET", self.route + params)
@@ -71,7 +82,7 @@ class ApiClient(ClientBase):
 		# according to api document,if files in body other params should be in url
 		files = [(k, v.filename, v.value) for k, v in kwargs.items() if isinstance(v, File)]
 		if files:
-			kwargs = {k:v for k, v in kwargs.items() if k not in files[0]}
+			kwargs = {k:safe_quote(v) for k, v in kwargs.items() if k not in files[0]}
 			params = params_generate(**kwargs)
 			fields = []
 		else:		

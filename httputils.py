@@ -4,6 +4,7 @@ try:
 except ImportError:
 	import httplib
 import mimetypes
+from common import CloseableClass
 
 __all__ = [
 	"HTTPSConnection",
@@ -11,15 +12,11 @@ __all__ = [
 	"params_generate"
 ]
 
-class HTTPSConnection(httplib.HTTPSConnection):
+class HTTPSConnection(httplib.HTTPSConnection, CloseableClass):
 	"""
 	decorate HTTPSConnection with __enter__ and __exit__
 	"""
-	def __enter__(self):
-		return self
-
-	def __exit__(self, type, value, traceback):
-		self.close()
+	pass
 
 def boundary_generate():
 	"""
@@ -62,6 +59,5 @@ def params_generate(**kwargs):
 	"""
 	generate url param like ?prefix=xxx&marker=xxx
 	"""
-	param_str = [ '='.join(map(str, key_value)) for key_value in kwargs.items() if key_value[1] != None]
-	res = "" if not len(param_str) else '?' + '&'.join(param_str)
-	return res
+	param_str = [str(k) + '=' + str(v) for k, v in kwargs.items() if v != None]
+	return '?' + '&'.join(param_str) if param_str else ""

@@ -1,16 +1,48 @@
-#!/usr/bin/python
+#encoding:utf8
+from hashlib import md5
+from config import PIECE
+from clients import BaiduPCS, BaiduPCSException
+from services.pcsservice import restore_path
+import time
 
-import sys
-from argparse import ArgumentParser
+def upload(localpath, uploadpath):
+	for slice, p2, p3 in __getslice(localpath):
+		check_rapidupload(len(slice), p2, p3)
 
-p = ArgumentParser(usage='it is usage tip', description='this is a test')
-p.add_argument('--one', default=1, type=int, help='the first argument')
-p.add_argument('--two', default=2, type=int, help='the second argument')
-p.add_argument('--docs-dir', default="./", help='document directory')
+def __getslice(localpath):
+	"""
+	yield a piece of file
+	return bytes, md5 of slice
+	"""
+	with open(localpath, "rb") as f:
+		content = f.read(PIECE)
+		while content:
+			yield content, md5(content).hexdigest(), md5(content[:256*1024]).hexdigest()
+			content = f.read(PIECE)
 
-# 这个函数将认识的和不认识的参数分开放进2个变量中
-args, remaining = p.parse_known_args(sys.argv)
-print(args)
-if not args:
-    print(sys.argv[0].append("-h"))
-    p.parse_known_args(sys.argv[0].append("-h"))
+def check_rapidupload(p1, p2, p3):
+	"""
+	judge whether a file can upload rapidly
+	"""
+	info = {}
+	info["content-length"] = p1
+	info["content-md5"] = p2
+	info["slice-md5"] = p3
+
+	# minimun of content-length is 256KB
+	if info["content-length"] > 256*1024:
+		client = BaiduPCS()
+		# return file's md5 if can be rapidupload
+		try:
+			resp = client.pcs.file.post(method="rapidupload", 
+				path=restore_path("/tmpfile/" + str(time.time())), **info)
+			print("successed")
+			return resp["md5"]
+		except BaiduPCSException as e:
+			# if not found return empty string
+			print("failed")
+			if not e.status == 404:
+				raise e
+
+if __name__ == "__main__":
+	upload("f:\\wwp.iso", "testrapid")

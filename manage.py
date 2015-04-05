@@ -4,7 +4,7 @@ import os
 from sys import argv, modules
 import time
 from clients import BaiduPCSException
-from config import PATHPREFIX
+from config import config
 from console.utils import bytes2human
 
 current_module = modules[__name__]
@@ -17,11 +17,14 @@ parser = ArgumentParser(description="""TSGUploader
 	""", usage=usage_prefix + " [COMMAND] [OPTION]... [ARGS]...")
 
 # just for print description
+parser.add_argument("cp", help="cp files and directories")
 parser.add_argument("info", help="show file infomation")
 parser.add_argument("init", help="get user authorization")
 parser.add_argument("ls", help="list directory contents")
 parser.add_argument("mkdir", help="make directories")
+parser.add_argument("mv", help="move (rename) files")
 parser.add_argument("rm", help="remove files or directories")
+parser.add_argument("test", help="run unit test")
 parser.add_argument("upload", help="upload files to baiduyun")
 
 def __pcs_error_handler(func):
@@ -37,6 +40,19 @@ def __pcs_error_handler(func):
 			print("ERROR[{errorcode}]: {errormsg}\nStatus code:{status}"\
 				.format(errorcode=e.error_code, errormsg=e.error_msg, status=e.status))
 	return decorated_func
+
+@__pcs_error_handler
+def cp():
+	""" {help}
+	{usageprefix} cp FROM TO
+	WARNING: directory is under {pathprefix}"""
+	parser = ArgumentParser(usage=cp.__doc__)
+	parser.add_argument("from_", help="file or directory path")
+	parser.add_argument("to", help="file or directory path")
+	args, _ = parser.parse_known_args(argv[2:])
+
+	from services.pcsservice import copy
+	copy(args.from_, args.to)
 
 @__pcs_error_handler
 def info():
@@ -92,6 +108,19 @@ def mkdir():
 	mkdirservice(args.directory)
 
 @__pcs_error_handler
+def mv():
+	""" {help}
+	{usageprefix} mv FROM TO
+	WARNING: directory is under {pathprefix}"""
+	parser = ArgumentParser(usage=mv.__doc__)
+	parser.add_argument("from_", help="file or directory path")
+	parser.add_argument("to", help="file or directory path")
+	args, _ = parser.parse_known_args(argv[2:])
+
+	from services.pcsservice import move
+	move(args.from_, args.to)
+
+@__pcs_error_handler
 def rm():
 	""" {help}
 	{usageprefix} rm FILEPATH
@@ -103,6 +132,14 @@ def rm():
 	from services.pcsservice import delete
 	delete(args.filepath)
 
+def test():
+	""" {help}
+	{usageprefix} test
+	"""
+	from unittest import TestLoader, TextTestRunner
+	# from tests import OpenApiTest, FileSysTest, UploadTest
+	TextTestRunner(verbosity=2).run(TestLoader().discover("tests"))
+
 @__pcs_error_handler
 def upload():
 	""" {help}
@@ -113,8 +150,10 @@ def upload():
 	parser.add_argument("uploadpath", help="upload path")
 	args, _ = parser.parse_known_args(argv[2:])
 
-	from services.pcsservice import upload as uploadservice
-	uploadservice(args.localpath, args.uploadpath, lambda x: print("%.2f%%"%x))
+	from services.pcsservice import Upload
+	with Upload(args.localpath, args.uploadpath) as upload_:
+		upload_.progress_callback = lambda x: print("%.2f%%"%x)
+		upload_()
 
 def __call(func_name):
 	"""
@@ -132,7 +171,7 @@ if __name__ == "__main__":
 		method = getattr(current_module, action.dest, None)
 		if method:
 			method.__doc__ = method.__doc__.format(
-				help=action.help, usageprefix=usage_prefix, pathprefix=PATHPREFIX)
+				help=action.help, usageprefix=usage_prefix, pathprefix=config.PATHPREFIX)
 	# excute command,if command is not correct print help
 	if len(argv)<=1 or not __call(argv[1]):
 		parser.parse_args([argv[0], "-h"])
