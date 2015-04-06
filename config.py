@@ -36,6 +36,6 @@ class Config(ConfigBase):
 	# folder to store temporary file
 	TEMPFILEFOLDER = "/__tmp_"
 	# folder to run unit test
-	TESTFOLDER = PATHPREFIX + TEMPFILEFOLDER + "/__test_/"
+	TESTFOLDER = PATHPREFIX + TEMPFILEFOLDER + "/__test_"
 
 config = Config()

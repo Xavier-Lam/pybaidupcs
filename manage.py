@@ -44,21 +44,23 @@ def __pcs_error_handler(func):
 @__pcs_error_handler
 def cp():
 	""" {help}
-	{usageprefix} cp FROM TO
-	WARNING: directory is under {pathprefix}"""
+	{usageprefix} cp [OPTION] FROM TO
+	WARNING: files are under {pathprefix}"""
 	parser = ArgumentParser(usage=cp.__doc__)
+	parser.add_argument("-f", "--force", action="store_true", 
+		help="remove destination file if exists.")
 	parser.add_argument("from_", help="file or directory path")
 	parser.add_argument("to", help="file or directory path")
 	args, _ = parser.parse_known_args(argv[2:])
 
 	from services.pcsservice import copy
-	copy(args.from_, args.to)
+	copy(args.from_, args.to, args.force)
 
 @__pcs_error_handler
 def info():
 	""" {help}
 	{usageprefix} info FILEPATH
-	WARNING: directory is under {pathprefix}"""
+	WARNING: files are under {pathprefix}"""
 	parser = ArgumentParser(usage=info.__doc__)
 	parser.add_argument("filepath", help="file or directory path")
 	args, _ = parser.parse_known_args(argv[2:])
@@ -77,7 +79,7 @@ def init():
 def ls():
 	""" {help}
 	{usageprefix} ls DIRECTORY
-	WARNING: directory is under {pathprefix}"""
+	WARNING: files are under {pathprefix}"""
 	parser = ArgumentParser(usage=ls.__doc__)
 	parser.add_argument("directory", help="directory name", default='/')
 	args, _ = parser.parse_known_args(argv[2:])
@@ -110,27 +112,31 @@ def mkdir():
 @__pcs_error_handler
 def mv():
 	""" {help}
-	{usageprefix} mv FROM TO
-	WARNING: directory is under {pathprefix}"""
+	{usageprefix} mv [OPTION] FROM TO
+	WARNING: files are under {pathprefix}"""
 	parser = ArgumentParser(usage=mv.__doc__)
+	parser.add_argument("-f", "--force", action="store_true", 
+		help="remove destination file if exists.")
 	parser.add_argument("from_", help="file or directory path")
 	parser.add_argument("to", help="file or directory path")
 	args, _ = parser.parse_known_args(argv[2:])
 
 	from services.pcsservice import move
-	move(args.from_, args.to)
+	move(args.from_, args.to, args.force)
 
 @__pcs_error_handler
 def rm():
 	""" {help}
-	{usageprefix} rm FILEPATH
-	WARNING: directory is under {pathprefix}"""
+	{usageprefix} rm [OPTION] FILEPATH
+	WARNING: files are under {pathprefix}"""
 	parser = ArgumentParser(usage=rm.__doc__)
+	parser.add_argument("-f", "--force", action="store_true", 
+		help="ignore nonexistent files")
 	parser.add_argument("filepath", help="file or directory path")
 	args, _ = parser.parse_known_args(argv[2:])
 
 	from services.pcsservice import delete
-	delete(args.filepath)
+	delete(args.filepath, args.force)
 
 def test():
 	""" {help}
@@ -143,9 +149,13 @@ def test():
 @__pcs_error_handler
 def upload():
 	""" {help}
-	{usageprefix} upload LOCALPATH UPLOADPATH
-	WARNING: directory is under {pathprefix}"""
+	{usageprefix} upload [OPTION] LOCALPATH UPLOADPATH
+	WARNING: uploadpath is under {pathprefix}"""
 	parser = ArgumentParser(usage=upload.__doc__)
+	parser.add_argument("-f", "--force", action="store_true", 
+		help="remove destination file if exists")
+	parser.add_argument("-d", "--direct", action="store_false", 
+		help="upload file directly without check rapid upload")
 	parser.add_argument("localpath", help="file path")
 	parser.add_argument("uploadpath", help="upload path")
 	args, _ = parser.parse_known_args(argv[2:])
@@ -153,7 +163,7 @@ def upload():
 	from services.pcsservice import Upload
 	with Upload(args.localpath, args.uploadpath) as upload_:
 		upload_.progress_callback = lambda x: print("%.2f%%"%x)
-		upload_()
+		upload_(force=args.force, rapid=args.direct)
 
 def __call(func_name):
 	"""
