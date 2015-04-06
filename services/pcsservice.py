@@ -37,10 +37,7 @@ class temp_file:
 		return self.__path
 
 	def __exit__(self, type, value, traceback):
-		try:
-			delete(self.__path)
-		except:
-			pass
+		delete(self.__path, True)
 
 def delete(path, force=False):
 	"""
@@ -62,6 +59,13 @@ def copy(from_, to, force=False):
 	client = BaiduPCS()
 	return client.pcs.file.post(**{"method":"copy", 
 		"from":restore_path(from_), "to":restore_path(to)})
+
+def encode(path, type_="M3U8_320_240"):
+	"""
+	encode videos
+	"""
+	client = BaiduPCS()
+	return client.pcs.file.get(path=restore_path(path), method="streaming", type=type_)
 
 def fileinfo(path):
 	"""

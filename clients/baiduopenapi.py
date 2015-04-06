@@ -20,6 +20,13 @@ class BaiduOpenApiException(Exception):
 		self.error = error
 		self.error_description = error_description
 
+	def __repr__(self):
+		return "{error}({status}): {desc}"\
+			.format(error=self.error, status=self.status, desc=self.error_description)
+
+	def __str__(self):
+		return self.__repr__()
+
 class BaiduOpenApi(ApiClient):
 	"""
 	BaiduOpenApi Client.
@@ -40,8 +47,16 @@ class BaiduOpenApi(ApiClient):
 		"""
 		handle exception from response.
 		"""
+		import logging
 		try:
 			msg = eval(resp.read())
-		except:
-			raise HTTPException("unexcept response.")
-		raise BaiduOpenApiException(resp.status, **msg)
+		except Exception as e:
+			logging.error(str(e))
+			raise HTTPException("unexcept response.", e)
+		error = BaiduOpenApiException(resp.status, **msg)
+		logging.warning("{error}=>({method} {route} {kwargs})".format(error=str(error), 
+			method=method.__name__.upper(), route=self.route, kwargs=str(kwargs)))
+		raise error
+
+	def __repr__(self):
+		return "<BaiduOpenApi %s>"%self.route

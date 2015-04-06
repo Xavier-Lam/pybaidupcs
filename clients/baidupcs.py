@@ -19,6 +19,13 @@ class BaiduPCSException(Exception):
 		self.error_code = error_code
 		self.error_msg = error_msg
 
+	def __repr__(self):
+		return "[{errorcode}]: {errormsg}({status})"\
+				.format(errorcode=self.error_code, errormsg=self.error_msg, status=self.status)
+
+	def __str__(self):
+		return self.__repr__()
+
 class BaiduPCS(ApiClient):
 	"""
 	BaiduPCS api client.
@@ -61,16 +68,24 @@ class BaiduPCS(ApiClient):
 			method	which method raised exception
 			kwargs	args which caused exception
 		"""
+		import logging
 		try:
 			msg = eval(resp.read())
 			# if accesstoken expired
 			# refresh accesstoken and recall method and return
 			if resp.status == 401:
+				logging.info("access token has expired.")
 				from services.openapiservice import refresh_tokens
 				BaiduPCS.access_token, BaiduPCS.refresh_token = refresh_tokens(BaiduPCS.refresh_token)
-				method(**kwargs)
-				print("access token expired.")
-				return
+				kwargs["access_token"] = BaiduPCS.access_token
+				return method(**kwargs)
 		except Exception as e:
-			raise HTTPException("unexcept response.")
-		raise BaiduPCSException(resp.status, msg["error_code"], msg["error_msg"])
+			logging.error(str(e))
+			raise HTTPException("unexcept response.", e)
+		error = BaiduPCSException(resp.status, msg["error_code"], msg["error_msg"])
+		logging.warning("{error}=>({method} {route} {kwargs})".format(error=str(error), 
+			method=method.__name__.upper(), route=self.route, kwargs=str(kwargs)))
+		raise error
+
+	def __repr__(self):
+		return "<BaiduPCS %s>"%self.route

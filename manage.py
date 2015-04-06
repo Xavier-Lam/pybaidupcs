@@ -1,20 +1,27 @@
 #encoding:utf8
-from argparse import ArgumentParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
+import logging
 import os
 from sys import argv, modules
 import time
-from clients import BaiduPCSException
+from clients import BaiduOpenApiException, BaiduPCSException
 from config import config
 from console.utils import bytes2human
 
 current_module = modules[__name__]
 usage_prefix = "python3 tsguploader.py"
 
-parser = ArgumentParser(description="""TSGUploader
+# logging
+logging.basicConfig(filename=config.LOGFILE, level=logging.INFO,
+	format="[%(levelname)s] %(asctime)s: %(message)s")
 
-	This is a baiduyun toolkit writen in python use baidu rest api.
-	Written by Xavier-Lam(13599838712@hotmail.com)
-	""", usage=usage_prefix + " [COMMAND] [OPTION]... [ARGS]...")
+parser = ArgumentParser(description="""  TSGUploader 
+  A baiduyun toolkit written in python use baidu rest api.
+  Written by Xavier-Lam(13599838712@hotmail.com)
+  Home page: https://github.com/Xavier-Lam/pybaidupcs
+  WARNING: This program seems not support Chinese filenames""", 
+	usage=usage_prefix + " [COMMAND] [OPTION]... [ARGS]...",
+	formatter_class=RawDescriptionHelpFormatter)
 
 # just for print description
 parser.add_argument("cp", help="cp files and directories")
@@ -27,21 +34,31 @@ parser.add_argument("rm", help="remove files or directories")
 parser.add_argument("test", help="run unit test")
 parser.add_argument("upload", help="upload files to baiduyun")
 
-def __pcs_error_handler(func):
+def __error_handler(func):
 	"""
-	handle pcs errors
+	handle errors
 	"""
 	from functools import wraps
 	@wraps(func)
 	def decorated_func(*args, **kwargs):
 		try:
+			from http.client import HTTPException
+		except ImportError:
+			from httplib import HTTPException
+		from common import ApplicationException
+		try:
 			return func(*args, **kwargs)
 		except BaiduPCSException as e:
-			print("ERROR[{errorcode}]: {errormsg}\nStatus code:{status}"\
-				.format(errorcode=e.error_code, errormsg=e.error_msg, status=e.status))
+			print("ERROR {0}".format(str(e)))
+		except ApplicationException as e:
+			print(e.args[0])
+		except BaiduOpenApiException as e:
+			print("ERROR {0}\nIf this problem show up constantly, try init.".format(str(e)))
+		except HTTPException as e:
+			print(e.args[0] + "please check up log for more information.")
 	return decorated_func
 
-@__pcs_error_handler
+@__error_handler
 def cp():
 	""" {help}
 	{usageprefix} cp [OPTION] FROM TO
@@ -56,7 +73,12 @@ def cp():
 	from services.pcsservice import copy
 	copy(args.from_, args.to, args.force)
 
-@__pcs_error_handler
+def video_encode():
+	from services.pcsservice import encode
+	a = encode("1.ts")
+	print(a)
+
+@__error_handler
 def info():
 	""" {help}
 	{usageprefix} info FILEPATH
@@ -75,7 +97,7 @@ def init():
 	for i in apply_auth():
 		print("please wait")
 
-@__pcs_error_handler
+@__error_handler
 def ls():
 	""" {help}
 	{usageprefix} ls DIRECTORY
@@ -97,7 +119,7 @@ def ls():
 		print("{mtime:20} {size:10} {filename}"\
 			.format(mtime=mtime, size=size, filename=filename))
 
-@__pcs_error_handler
+@__error_handler
 def mkdir():
 	""" {help}
 	{usageprefix} mkdir DIRECTORY
@@ -109,7 +131,7 @@ def mkdir():
 	from services.pcsservice import mkdir as mkdirservice
 	mkdirservice(args.directory)
 
-@__pcs_error_handler
+@__error_handler
 def mv():
 	""" {help}
 	{usageprefix} mv [OPTION] FROM TO
@@ -124,7 +146,7 @@ def mv():
 	from services.pcsservice import move
 	move(args.from_, args.to, args.force)
 
-@__pcs_error_handler
+@__error_handler
 def rm():
 	""" {help}
 	{usageprefix} rm [OPTION] FILEPATH
@@ -146,7 +168,7 @@ def test():
 	# from tests import OpenApiTest, FileSysTest, UploadTest
 	TextTestRunner(verbosity=2).run(TestLoader().discover("tests"))
 
-@__pcs_error_handler
+@__error_handler
 def upload():
 	""" {help}
 	{usageprefix} upload [OPTION] LOCALPATH UPLOADPATH

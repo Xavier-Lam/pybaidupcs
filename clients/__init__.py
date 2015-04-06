@@ -1,4 +1,5 @@
 #encoding:utf8
+from copy import copy
 from httputils import HTTPSConnection, encode_multipart_formdata, params_generate
 
 __all__ = [
@@ -66,13 +67,14 @@ class ApiClient(ClientBase):
 		"""
 		Create a get request.
 		"""
+		o_kwargs = copy(kwargs)
 		kwargs = {k:safe_quote(v) for k, v in kwargs.items()}
 		with HTTPSConnection(self.base_url) as conn:
 			params = params_generate(**kwargs)
 			conn.request("GET", self.route + params)
 			resp = conn.getresponse()
 			if resp.status >= 400:
-				self.exception_handler(resp, self.get, kwargs)
+				return self.exception_handler(resp, super(self.__class__, self).get, o_kwargs)
 			return eval(resp.read())
 
 	def post(self, **kwargs):
@@ -80,6 +82,7 @@ class ApiClient(ClientBase):
 		Create a post request.
 		"""
 		# according to api document,if files in body other params should be in url
+		o_kwargs = copy(kwargs)
 		files = [(k, v.filename, v.value) for k, v in kwargs.items() if isinstance(v, File)]
 		if files:
 			kwargs = {k:safe_quote(v) for k, v in kwargs.items() if k not in files[0]}
@@ -102,7 +105,7 @@ class ApiClient(ClientBase):
 			conn.request("POST", self.route + params, body=body, headers=headers)
 			resp = conn.getresponse()
 			if resp.status >= 400:
-				self.exception_handler(resp, self.post, kwargs)
+				return self.exception_handler(resp, super(self.__class__, self).post, o_kwargs)
 			return eval(resp.read())
 
 from clients.baiduopenapi import *

@@ -33,6 +33,10 @@ class Config(ConfigBase):
 	# 2 ~ 1024
 	PIECES = 1024
 
+	#loging path
+	LOGFILE = os.path.join(os.getcwd(), r"log.log")
+	TESTLOGFILE = os.path.join(os.getcwd(), r"test_log.log")
+
 	# folder to store temporary file
 	TEMPFILEFOLDER = "/__tmp_"
 	# folder to run unit test

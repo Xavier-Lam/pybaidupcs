@@ -62,18 +62,16 @@ def deserialize_tokens():
 	return tokens load from disk
 	return access_token, refresh_token
 	"""
-	if not os.path.isfile(config.TOKENPATH):
-		return
-	# if token exists
-	with open(config.TOKENPATH, "r+") as f:
-		context = f.read()
 	try:
-		res = eval(context)
-		# load into memory
-		return res["access_token"], res["refresh_token"]
+		with open(config.TOKENPATH, "r+") as f:
+			context = f.read()
+			res = eval(context)
+			# load into memory
+			return res["access_token"], res["refresh_token"]
 	except:
 		# unexcept token format
-		pass
+		from common import ApplicationException
+		raise ApplicationException("authorization file is broken, please run init")
 
 def refresh_tokens(refresh_token):
 	"""
