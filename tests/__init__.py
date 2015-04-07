@@ -22,11 +22,11 @@ class BaseTest(TestCase):
 	"""
 	def setUp(self):		
 		# create test folder
-		from services.pcsservice import delete, mkdir
+		from services.pcs import delete, mkdir
 		delete('/', True)
 		mkdir('/')
 
 	def tearDown(self):
 		# delete test folder
-		from services.pcsservice import delete
+		from services.pcs import delete
 		delete('/', True)

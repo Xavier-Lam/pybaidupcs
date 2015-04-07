@@ -35,7 +35,7 @@ class BaiduPCS(ApiClient):
 	refresh_token = None
 
 	def __init__(self, route=""):
-		from services.openapiservice import deserialize_tokens
+		from services.openapi import deserialize_tokens
 		# if there is no tokens load
 		if not BaiduPCS.access_token:
 			# load tokens from harddisk
@@ -43,12 +43,15 @@ class BaiduPCS(ApiClient):
 		super(BaiduPCS, self).__init__(route)
 
 	def init_request(self, request_class):
-		def call(self, **kwargs):
-			print(1)
+		req = request_class(self.base_url, route="/rest/2.0/pcs" + self.route, 
+			caller=self)
+		old_call = req._call
+		def new_call(self, **kwargs):
 			self.params["method"] = kwargs.pop("method")
-			return self.__call__(self, **kwargs)
-		req = request_class(self.base_url, route="/rest/2.0" + self.route, caller=self)
-		req.__call__ = call
+			return old_call(**kwargs)
+		# binding new call method
+		from types import MethodType
+		req._call = MethodType(new_call, req)
 		req.params["access_token"] = self.access_token
 		return req
 
@@ -67,7 +70,7 @@ class BaiduPCS(ApiClient):
 			# refresh accesstoken and recall method and return
 			if resp.status == 401:
 				logging.info("access token has expired.")
-				from services.openapiservice import refresh_tokens
+				from services.openapi import refresh_tokens
 				BaiduPCS.access_token, BaiduPCS.refresh_token \
 					= refresh_tokens(BaiduPCS.refresh_token)
 				# update request's access_token
@@ -78,6 +81,9 @@ class BaiduPCS(ApiClient):
 			raise HTTPException("unexcept response.", e)
 		error = BaiduPCSException(resp.status, msg["error_code"], msg["error_msg"])
 		logging.warning("{error}=>({req})".format(error=str(error), req=req))
+		# retry when server error
+		if resp.status > 500:
+			req.getresponse()
 		raise error
 
 	def __repr__(self):

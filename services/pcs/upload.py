@@ -1,104 +1,18 @@
 #encoding:utf8
 from collections import defaultdict, OrderedDict
-from hashlib import md5
 import json
 from math import ceil
+from hashlib import md5
 import os
-import time
-from clients import *
+from clients import BaiduPCS, BaiduPCSException
 from common import CloseableClass
 from config import config
+from services.pcs import hashfile, restore_path, temp_file
 
-def restore_path(path):
-	"""
-	add path prefix 
-	"""
-	# replace \\ with /
-	path = path.replace('\\', '/')
-	# if path start with / then delete it
-	path = path.lstrip('/')
-	# add prefix
-	return config.PATHPREFIX + '/' + path
-
-def safe_path(path):
-	"""
-	delete path prefix and replace '\\' with ""
-	"""
-	return path.replace('\\', '/').replace("//", '/')\
-		.replace(config.PATHPREFIX, "", 1)
-
-class temp_file:
-	"""
-	generate a temp file path and delete file when exit
-	"""
-	def __enter__(self):
-		path = config.TEMPFILEFOLDER + "/__tmp_" + str(time.time()).replace('.', '_')
-		self.__path = path
-		return self.__path
-
-	def __exit__(self, type, value, traceback):
-		delete(self.__path, True)
-
-def delete(path, force=False):
-	"""
-	delete file or directory, force:ignore nonexistent files
-	"""
-	client = BaiduPCS()
-	try:
-		return client.pcs.file.post(method="delete", path=restore_path(path))
-	except BaiduPCSException as e:
-		if not force or e.status != 404:
-			raise e
-
-def copy(from_, to, force=False):
-	"""
-	copy  file or directory, force:remove existing destination file
-	"""
-	if force:
-		delete(to, True)
-	client = BaiduPCS()
-	return client.pcs.file.post(**{"method":"copy", 
-		"from":restore_path(from_), "to":restore_path(to)})
-
-def encode(path, type_="M3U8_320_240"):
-	"""
-	encode videos
-	"""
-	client = BaiduPCS()
-	return client.pcs.file.get(path=restore_path(path), method="streaming", type=type_)
-
-def fileinfo(path):
-	"""
-	get file metainfo
-	"""
-	client = BaiduPCS()
-	resp = client.pcs.file.get(method="meta", path=restore_path(path))
-	return resp["list"][0]
-
-def listfiles(path):
-	"""
-	list files and directories
-	"""
-	client = BaiduPCS()
-	resp = client.pcs.file.get(method="list", path=restore_path(path))
-	return resp["list"]
-
-def mkdir(path):
-	"""
-	make a directory
-	"""
-	client = BaiduPCS()
-	return client.pcs.file.post(method="mkdir", path=restore_path(path))
-
-def move(from_, to, force=False):
-	"""
-	move file or directory, force:remove existing destination file
-	"""
-	if force:
-		delete(to, True)
-	client = BaiduPCS()
-	return client.pcs.file.post(**{"method":"move",
-		"from":restore_path(from_), "to":restore_path(to)})
+__all__ = [
+	"check_rapidupload",
+	"Upload"
+]
 
 def check_rapidupload(c_length, c_md5, s_md5, uploadpath, ondup=None):
 	"""
@@ -116,7 +30,7 @@ def check_rapidupload(c_length, c_md5, s_md5, uploadpath, ondup=None):
 		client = BaiduPCS()
 		# return file's md5 if can be rapidupload
 		try:
-			resp = client.pcs.file.post(**kwargs)
+			resp = client.file.post(**kwargs)
 			return resp["md5"]
 		except BaiduPCSException as e:
 			# if not found return empty string
@@ -134,7 +48,7 @@ def rapidupload_info(localpath):
 	# minimun of content-length is 256KB
 	if res["c_length"] > 256*1024:
 		with open(localpath, "rb") as f:
-			res["c_md5"], res["s_md5"] = __hashfile(f)
+			res["c_md5"], res["s_md5"] = hashfile(f)
 	return res
 
 class Upload(CloseableClass):
@@ -219,7 +133,7 @@ class Upload(CloseableClass):
 		client = BaiduPCS()
 		kwargs = dict(method="upload", path=restore_path(uploadpath), file=file)
 		if ondup: kwargs["ondup"] = ondup
-		return client.pcs.file.post(**kwargs)
+		return client.file.post(**kwargs)
 
 	def __upload_tempfile(self, content):
 		"""
@@ -227,7 +141,7 @@ class Upload(CloseableClass):
 		"""
 		file = File("tmp", content)
 		client = BaiduPCS()
-		return client.pcs.file.post(method="upload", type="tmpfile", file=file)
+		return client.file.post(method="upload", type="tmpfile", file=file)
 
 	def __getslice(self):
 		"""
@@ -285,19 +199,5 @@ class Upload(CloseableClass):
 		combine file slices into 1
 		"""
 		client = BaiduPCS()
-		return client.pcs.file.post(method="createsuperfile", 
+		return client.file.post(method="createsuperfile", 
 			path=restore_path(uploadpath), param=json.dumps({"block_list": list(md5s)}))
-
-def __hashfile(file, blocksize=4*1024*1024):
-	"""
-	3431825/generating-a-md5-checksum-of-a-file
-	Omnifarious
-	return content-md5, slice-md5
-	"""
-	md5obj = md5()
-	# first slice check for rapid upload
-	first_slice = buf = file.read(256*1024)
-	while(len(buf)>0):
-		md5obj.update(buf)
-		buf = file.read(blocksize)
-	return md5obj.hexdigest(), md5(first_slice).hexdigest()

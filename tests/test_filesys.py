@@ -13,7 +13,7 @@ class FileSysTest(BaseTest):
 	"""
 	def test_mkdir(self):
 		from clients import BaiduPCSException
-		from services.pcsservice import fileinfo, mkdir, safe_path
+		from services.pcs import fileinfo, mkdir, safe_path
 		# case1 make a directory aaa
 		mkdir("aaa")
 		info = fileinfo("\\aaa")
@@ -27,7 +27,7 @@ class FileSysTest(BaseTest):
 
 	def test_cp(self):
 		from clients import BaiduPCSException
-		from services.pcsservice import copy, fileinfo, listfiles, mkdir, safe_path
+		from services.pcs import copy, fileinfo, listfiles, mkdir, safe_path
 		# case1 copy aaa to bbb
 		mkdir("aaa")
 		copy("aaa", "/bbb")
@@ -48,7 +48,7 @@ class FileSysTest(BaseTest):
 
 	def test_mv(self):
 		from clients import BaiduPCSException
-		from services.pcsservice import move, fileinfo, listfiles, mkdir, safe_path
+		from services.pcs import move, fileinfo, listfiles, mkdir, safe_path
 		# case1 move aaa to bbb
 		mkdir("aaa")
 		move("/aaa", "\\bbb")
@@ -73,7 +73,7 @@ class FileSysTest(BaseTest):
 
 	def test_rm(self):
 		from clients import BaiduPCSException
-		from services.pcsservice import delete, fileinfo, listfiles, mkdir, safe_path
+		from services.pcs import delete, fileinfo, listfiles, mkdir, safe_path
 		# case1 delete aaa
 		mkdir("/aaa")
 		delete("aaa")

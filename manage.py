@@ -71,11 +71,11 @@ def cp():
 	parser.add_argument("to", help="file or directory path")
 	args, _ = parser.parse_known_args(argv[2:])
 
-	from services.pcsservice import copy
+	from services.pcs import copy
 	copy(args.from_, args.to, args.force)
 
 def video_encode():
-	from services.pcsservice import encode
+	from services.pcs import encode
 	a = encode("1.ts")
 	print(a)
 
@@ -88,7 +88,7 @@ def info():
 	parser.add_argument("filepath", help="file or directory path")
 	args, _ = parser.parse_known_args(argv[2:])
 
-	from services.pcsservice import fileinfo
+	from services.pcs import fileinfo
 	print(fileinfo(args.filepath))
 
 def init():
@@ -107,7 +107,7 @@ def ls():
 	parser.add_argument("directory", help="directory name", default='/')
 	args, _ = parser.parse_known_args(argv[2:])
 
-	from services.pcsservice import listfiles
+	from services.pcs import listfiles
 	files = listfiles(args.directory)
 	# format and print files
 	for f in files:
@@ -129,7 +129,7 @@ def mkdir():
 	parser.add_argument("directory", help="directory name")
 	args, _ = parser.parse_known_args(argv[2:])
 
-	from services.pcsservice import mkdir as mkdirservice
+	from services.pcs import mkdir as mkdirservice
 	mkdirservice(args.directory)
 
 @__error_handler
@@ -144,7 +144,7 @@ def mv():
 	parser.add_argument("to", help="file or directory path")
 	args, _ = parser.parse_known_args(argv[2:])
 
-	from services.pcsservice import move
+	from services.pcs import move
 	move(args.from_, args.to, args.force)
 
 @__error_handler
@@ -158,7 +158,7 @@ def rm():
 	parser.add_argument("filepath", help="file or directory path")
 	args, _ = parser.parse_known_args(argv[2:])
 
-	from services.pcsservice import delete
+	from services.pcs import delete
 	delete(args.filepath, args.force)
 
 def test():
@@ -183,7 +183,7 @@ def upload():
 	parser.add_argument("uploadpath", help="upload path")
 	args, _ = parser.parse_known_args(argv[2:])
 
-	from services.pcsservice import Upload
+	from services.pcs import Upload
 	with Upload(args.localpath, args.uploadpath) as upload_:
 		upload_.progress_callback = lambda x: print("%.2f%%"%x)
 		upload_(force=args.force, rapid=args.direct)
