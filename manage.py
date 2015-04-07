@@ -26,6 +26,7 @@ parser = ArgumentParser(description="""  TSGUploader
 
 # just for print description
 parser.add_argument("cp", help="cp files and directories")
+parser.add_argument("dl", help="a simple download implement")
 parser.add_argument("info", help="show file infomation")
 parser.add_argument("init", help="get user authorization")
 parser.add_argument("ls", help="list directory contents")
@@ -52,6 +53,7 @@ def __error_handler(func):
 		except BaiduPCSException as e:
 			print("ERROR {0}".format(str(e)))
 		except ApplicationException as e:
+			logging.error(str(e.args[0]))
 			print(e.args[0])
 		except BaiduOpenApiException as e:
 			print("ERROR {0}\nIf this problem show up constantly, try init.".format(str(e)))
@@ -73,6 +75,39 @@ def cp():
 
 	from services.pcs import copy
 	copy(args.from_, args.to, args.force)
+
+@__error_handler
+def dl():
+	""" {help}
+	{usageprefix} dl [OPTION] DOWNLOADPATH LOCALPATH
+	WARNING: files are under {pathprefix}"""
+	parser = ArgumentParser(usage=dl.__doc__)
+	parser.add_argument("-f", "--force", action="store_true",
+		help="override local file if exists")
+	parser.add_argument("-i", "--interactive", action="store_true",
+		help="prompt if localfile exists")
+	parser.add_argument("-r", "--resume", action="store_true",
+		help="resume incompleted download")
+	parser.add_argument("downloadpath", help="download from")
+	parser.add_argument("localpath", help="localpath to store file")
+	args, _ = parser.parse_known_args(argv[2:])
+
+	if args.interactive and os.path.isfile(args.localpath):
+		# if file exist
+		print("local file exists, if this is a incompleted download file please"
+			" enter r, if you want to override this file enter y, if you don't want"
+			" to override this file enter other keys")
+		res = input().lower()
+		if res == 'r':
+			args.resume = True
+		elif res == 'y':
+			args.force = True
+		else:
+			return
+	from services.pcs import Download
+	with Download(args.downloadpath, args.localpath) as download:
+		download.progress_callback = lambda x: print("%.2f%%"%x)
+		download(override=args.force, resume=args.resume)
 
 def video_encode():
 	from services.pcs import encode

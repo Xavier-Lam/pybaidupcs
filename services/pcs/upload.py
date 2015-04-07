@@ -83,7 +83,7 @@ class Upload(CloseableClass):
 			# open file and read
 			self.f = open(self.localpath, "rb")
 			# judge upload method
-			if self.filesize > config.PIECE:
+			if self.filesize > config.UPLOADPIECE:
 				self.__multiupload()
 				return check_rapidupload(**info)
 			else:
@@ -148,17 +148,17 @@ class Upload(CloseableClass):
 		yield a piece of file
 		return bytes, md5 of slice, md5 of first 256kb
 		"""
-		content = self.f.read(config.PIECE)
+		content = self.f.read(config.UPLOADPIECE)
 		while content:
 			yield content, md5(content).hexdigest(), md5(content[:256*1024]).hexdigest()
-			content = self.f.read(config.PIECE)
+			content = self.f.read(config.UPLOADPIECE)
 
 	def __add_md5_slice(self, content, slice_md5):
 		"""
 		add md5 slices into dict for merge file
 		"""
 		# if temp list is full 
-		if len(self.tmp_md5s) == config.PIECES:
+		if len(self.tmp_md5s) == config.UPLOADPIECES:
 			self.__clean_temp_md5s()
 		self.tmp_md5sum.update(content)
 		self.tmp_md5s.append(slice_md5)

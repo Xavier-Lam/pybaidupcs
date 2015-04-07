@@ -29,9 +29,11 @@ class Config(ConfigBase):
 	PATHPREFIX = "/apps" + '/' + APPNAME.lower()
 
 	# max simple upload size (bytes)
-	PIECE = 512*1024
+	UPLOADPIECE = 512*1024
 	# 2 ~ 1024
-	PIECES = 1024
+	UPLOADPIECES = 1024
+	# max download piece size
+	DOWNLOADPIECE = 512*1024
 
 	#loging path
 	LOGFILE = os.path.join(os.getcwd(), r"log.log")

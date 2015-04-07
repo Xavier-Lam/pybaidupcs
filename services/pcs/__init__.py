@@ -15,7 +15,9 @@ __all__ = [
 	"fileinfo",
 	"listfiles",
 	"mkdir",
-	"move"
+	"move",
+	"Download",
+	"request_piece"
 ]
 
 def restore_path(path):
@@ -69,6 +71,6 @@ def hashfile(file, blocksize=4*1024*1024):
 # 	client = BaiduPCS()
 # 	return client.pcs.file.get(path=restore_path(path), method="streaming", type=type_)
 
-from services.pcs.download import *
 from services.pcs.filesys import *
+from services.pcs.download import *
 from services.pcs.upload import *

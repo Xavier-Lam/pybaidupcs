@@ -5,8 +5,8 @@ from unittest import TestCase
 # change base path to test folder
 from config import config
 config.PATHPREFIX = config.TESTFOLDER
-config.PIECE = 256*1024
-config.PIECES = 2
+config.UPLOADPIECE = 256*1024
+config.UPLOADPIECES = 2
 import logging
 oldHandler = logging.getLogger().handlers[0]
 newHandler = logging.FileHandler(config.TESTLOGFILE)
