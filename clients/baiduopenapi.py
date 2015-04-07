@@ -33,17 +33,13 @@ class BaiduOpenApi(ApiClient):
 	"""
 	base_url = "openapi.baidu.com"
 
-	def get(self, **kwargs):
-		"""
-		overwrite get method for add clientid and secretid.
-		and add api prefix /oauth/2.0
-		"""
-		kwargs["client_id"] = config.BAIDU_API_KEY
-		kwargs["client_secret"] = config.BAIDU_SECRET_KEY
-		self.route = "/oauth/2.0" + self.route
-		return super(BaiduOpenApi, self).get(**kwargs)
+	def init_request(self, request_class):
+		req = request_class(self.base_url, route="/oauth/2.0" + self.route, caller=self)
+		req.params["client_id"] = config.BAIDU_API_KEY
+		req.params["client_secret"] = config.BAIDU_SECRET_KEY
+		return req
 
-	def exception_handler(self, resp, method, kwargs):
+	def exception_handler(self, resp, req):
 		"""
 		handle exception from response.
 		"""
@@ -54,8 +50,7 @@ class BaiduOpenApi(ApiClient):
 			logging.error(str(e))
 			raise HTTPException("unexcept response.", e)
 		error = BaiduOpenApiException(resp.status, **msg)
-		logging.warning("{error}=>({method} {route} {kwargs})".format(error=str(error), 
-			method=method.__name__.upper(), route=self.route, kwargs=str(kwargs)))
+		logging.warning("{error}=>({req})".format(error=str(error), req=req))
 		raise error
 
 	def __repr__(self):

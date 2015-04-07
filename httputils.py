@@ -29,7 +29,7 @@ def boundary_generate():
 def get_contenttype(filename):
 	return mimetypes.guess_type(filename)[0] or 'application/octet-stream'
 
-def encode_multipart_formdata(fields=[], files=[]):
+def encode_multipart_formdata(fields=None, files=None):
 	"""
 	fields is a sequence of (name, value) elements for regular form fields.
 	files is a sequence of (name, filename, value) elements for
@@ -38,12 +38,12 @@ def encode_multipart_formdata(fields=[], files=[]):
 	"""
 	boundary = boundary_generate()
 	L = []
-	for (key, value) in fields:
+	for (key, value) in fields or []:
 		L.append(bytes("--" + boundary,"ASCII"))
 		L.append(bytes('Content-Disposition: form-data; name="%s"' % key,"ASCII"))
 		L.append(b'')
 		L.append(bytes(str(value),"ASCII"))
-	for (key, filename, value) in files:
+	for (key, filename, value) in files or []:
 		L.append(bytes('--' + boundary,"ASCII"))
 		L.append(bytes('Content-Disposition: form-data; name="%s"; filename="%s"' 
 			% (key, filename),"ASCII", "backslashreplace"))
@@ -59,7 +59,12 @@ def encode_multipart_formdata(fields=[], files=[]):
 
 def params_generate(**kwargs):
 	"""
-	generate url param like ?prefix=xxx&marker=xxx
+	generate url param like ?prefix=xxx&marker=xxx and quote the value
 	"""
-	param_str = [str(k) + '=' + str(v) for k, v in kwargs.items() if v != None]
+	try:
+		from urllib.parse import quote
+	except ImportError:
+		from urllib import quote
+	param_str = ["{k}={v}".format(k=k, v=quote(str(v), "")) \
+		for k, v in kwargs.items() if v != None]
 	return '?' + '&'.join(param_str) if param_str else ""

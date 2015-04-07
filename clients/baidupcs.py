@@ -42,25 +42,17 @@ class BaiduPCS(ApiClient):
 			BaiduPCS.access_token, BaiduPCS.refresh_token = deserialize_tokens()
 		super(BaiduPCS, self).__init__(route)
 
-	def get(self, **kwargs):
-		"""
-		overwrite get method for accesstoken maintained by self
-		and add api prefix /rest/2.0
-		"""
-		kwargs["access_token"] = self.access_token
-		self.route = "/rest/2.0" + self.route
-		return super(BaiduPCS, self).get(**kwargs)
+	def init_request(self, request_class):
+		def call(self, **kwargs):
+			print(1)
+			self.params["method"] = kwargs.pop("method")
+			return self.__call__(self, **kwargs)
+		req = request_class(self.base_url, route="/rest/2.0" + self.route, caller=self)
+		req.__call__ = call
+		req.params["access_token"] = self.access_token
+		return req
 
-	def post(self, **kwargs):
-		"""
-		overwrite post method for accesstoken maintained by self.
-		and add api prefix /rest/2.0
-		"""
-		kwargs["access_token"] = self.access_token
-		self.route = "/rest/2.0" + self.route
-		return super(BaiduPCS, self).post(**kwargs)
-
-	def exception_handler(self, resp, method, kwargs):
+	def exception_handler(self, resp, req):
 		"""
 		handle exception from response.
 		input:
@@ -76,15 +68,16 @@ class BaiduPCS(ApiClient):
 			if resp.status == 401:
 				logging.info("access token has expired.")
 				from services.openapiservice import refresh_tokens
-				BaiduPCS.access_token, BaiduPCS.refresh_token = refresh_tokens(BaiduPCS.refresh_token)
-				kwargs["access_token"] = BaiduPCS.access_token
-				return method(**kwargs)
+				BaiduPCS.access_token, BaiduPCS.refresh_token \
+					= refresh_tokens(BaiduPCS.refresh_token)
+				# update request's access_token
+				req.params["access_token"] = BaiduPCS.access_token
+				return req.getresponse()
 		except Exception as e:
 			logging.error(str(e))
 			raise HTTPException("unexcept response.", e)
 		error = BaiduPCSException(resp.status, msg["error_code"], msg["error_msg"])
-		logging.warning("{error}=>({method} {route} {kwargs})".format(error=str(error), 
-			method=method.__name__.upper(), route=self.route, kwargs=str(kwargs)))
+		logging.warning("{error}=>({req})".format(error=str(error), req=req))
 		raise error
 
 	def __repr__(self):
