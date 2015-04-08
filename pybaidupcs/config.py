@@ -3,6 +3,8 @@ import os
 
 __all__ = ["Config"]
 
+BASE_FOLDER = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
 class ConfigBase(object):
 	def update(self, configs):
 		for k, v in configs.items():
@@ -18,13 +20,15 @@ class ConfigBase(object):
 		return getattr(self, key, default)
 
 class Config(ConfigBase):
+	USAGE_PREFIX = "python3 pybaidupcs"
+
 	# input your api key here
 	BAIDU_API_KEY = "4OySt4LBqrR6QNyo7yXywsnC"#os.environ["BAIDU_API_KEY"]
 	BAIDU_SECRET_KEY = "GQhhC485PAejjST6HiAPbG0kTCSlrxWW"#os.environ["BAIDU_SECRET_KEY"]
 	# name of your app
 	APPNAME = "TSGUploader"
 	# path to store your token
-	TOKENPATH = os.path.join(os.getcwd(), r"authorization.json")
+	TOKENPATH = os.path.join(BASE_FOLDER, r"authorization.json")
 	# baiduyun path prefix
 	PATHPREFIX = "/apps" + '/' + APPNAME.lower()
 
@@ -36,8 +40,8 @@ class Config(ConfigBase):
 	DOWNLOADPIECE = 512*1024
 
 	#loging path
-	LOGFILE = os.path.join(os.getcwd(), r"log.log")
-	TESTLOGFILE = os.path.join(os.getcwd(), r"test_log.log")
+	LOGFILE = os.path.join(BASE_FOLDER, r"log.log")
+	TESTLOGFILE = os.path.join(BASE_FOLDER, r"test_log.log")
 
 	# folder to store temporary file
 	TEMPFILEFOLDER = "/__tmp_"

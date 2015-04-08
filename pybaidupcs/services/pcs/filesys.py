@@ -7,6 +7,7 @@ __all__ = [
 	"delete",
 	"copy",
 	"fileinfo",
+	"find",
 	"listfiles",
 	"mkdir",
 	"move"
@@ -42,6 +43,18 @@ def fileinfo(path):
 	client = BaiduPCS()
 	resp = client.file.get(method="meta", path=restore_path(path))
 	return resp["list"][0]
+
+def find(keyword, path='/'):
+	"""
+	find files
+	"""
+	client = BaiduPCS()
+	resp = client.file.get(method="search", path=restore_path(path), re=1, 
+		wd=keyword)
+	res = resp["list"]
+	for f in res:
+		f["path"] = safe_path(f["path"])
+	return res
 
 def listfiles(path):
 	"""

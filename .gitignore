@@ -1,3 +1,6 @@
 *.py[cod]
 *.log
 *.json
+*.zip
+*.suo
+dist*

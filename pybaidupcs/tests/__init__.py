@@ -14,7 +14,7 @@ newHandler.setFormatter(oldHandler.formatter)
 logging.getLogger().handlers[0] = newHandler
 logging.info("test starts")
 
-__all__ = ["BaseTest"]
+__all__ = ["BaseTest", "run_test"]
 
 class BaseTest(TestCase):
 	"""
@@ -30,3 +30,10 @@ class BaseTest(TestCase):
 		# delete test folder
 		from services.pcs import delete
 		delete('/', True)
+
+from tests.test_filesys import *
+from tests.test_openapi import *
+from tests.test_upload import *
+
+# def run_test():
+# 	main()

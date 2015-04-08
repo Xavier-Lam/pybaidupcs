@@ -13,6 +13,7 @@ __all__ = [
 	"delete",
 	"copy",
 	"fileinfo",
+	"find",
 	"listfiles",
 	"mkdir",
 	"move",

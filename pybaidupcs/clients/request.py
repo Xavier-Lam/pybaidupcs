@@ -1,5 +1,5 @@
 #encoding:utf8
-from httputils import HTTPSConnection, encode_multipart_formdata, params_generate
+from clients.utils import HTTPSConnection, encode_multipart_formdata, params_generate
 
 __all__ = [
 	"File",

@@ -1,7 +1,6 @@
 #encoding:utf8
 from copy import copy
 from clients.request import *
-from httputils import HTTPSConnection, encode_multipart_formdata, params_generate
 
 __all__ = [
 	"File",
