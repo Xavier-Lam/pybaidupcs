@@ -6,6 +6,7 @@ import os
 from sys import argv, modules
 import time
 from clients import BaiduOpenApiException, BaiduPCSException
+from common import ApplicationException
 from config import config
 from console.intro import parser
 from console.utils import bytes2human
@@ -35,7 +36,6 @@ def __error_handler(func):
 			from http.client import HTTPException
 		except ImportError:
 			from httplib import HTTPException
-		from common import ApplicationException
 		try:
 			return func(*args, **kwargs)
 		except BaiduPCSException as e:
@@ -44,7 +44,8 @@ def __error_handler(func):
 			logging.error(str(e.args[0]))
 			print(e.args[0])
 		except BaiduOpenApiException as e:
-			print("ERROR {0}\nIf this problem show up constantly, try init.".format(str(e)))
+			print("ERROR {0}\nIf this problem show up constantly, try init."\
+				.format(str(e)))
 		except HTTPException as e:
 			print(e.args[0] + "please check up log for more information.")
 	return decorated_func
@@ -56,8 +57,12 @@ def formatfiles(files):
 		# if isdir then size display as <dir> else print size
 		size = "<dir>" if f["isdir"] else bytes2human(f["size"])
 		# erase path prefix
-		print("{mtime:20} {size:10} {filename}"\
-			.format(mtime=mtime, size=size, filename=f["path"]))
+		try:
+			print("{mtime:20} {size:10} {filename}"\
+				.format(mtime=mtime, size=size, filename=f["path"]))
+		except UnicodeEncodeError as e:
+			raise ApplicationException("something wrong with your file, please rename"
+				+ f["path"])
 
 @__error_handler
 def cp():

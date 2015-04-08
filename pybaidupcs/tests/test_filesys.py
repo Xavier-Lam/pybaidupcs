@@ -95,3 +95,15 @@ class FileSysTest(BaseTest):
 		mkdir("aaa")
 		mkdir("bbb")
 		delete(["/aaa", "\\bbb"])
+
+	def test_find(self):
+		from clients import BaiduPCSException
+		from services.pcs import find, mkdir, safe_path
+		# logging.info("------find------")
+		# mkdir("aaa")
+		# mkdir("bbb")
+		# mkdir("aaa/aba")
+		# res = find("b")
+		# logging.info("<case1 find two >")
+		# self.assertTrue(len(res)==2)
+
