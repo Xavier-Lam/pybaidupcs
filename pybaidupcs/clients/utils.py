@@ -47,9 +47,8 @@ def encode_multipart_formdata(fields=None, files=None):
 	for (key, filename, value) in files or []:
 		L.append(bytes('--' + boundary,"utf8"))
 		L.append(bytes('Content-Disposition: form-data; name="%s"; filename="%s"' 
-			% (key, filename),"utf8", "backslashreplace"))
-		L.append(bytes('Content-Type: %s' % get_contenttype(filename),"utf8", 
-			"backslashreplace"))
+			% (key, filename),"utf8"))
+		L.append(bytes('Content-Type: %s' % get_contenttype(filename),"utf8"))
 		L.append(b'')
 		L.append(value)
 	L.append(bytes('--' + boundary + '--',"utf8"))
