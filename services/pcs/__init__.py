@@ -68,8 +68,11 @@ def hashfile(file, blocksize=4*1024*1024):
 # 	"""
 # 	encode videos
 # 	"""
+# 	from clients import BaiduPCS
 # 	client = BaiduPCS()
-# 	return client.pcs.file.get(path=restore_path(path), method="streaming", type=type_)
+# 	req = client.pcs.file.get
+# 	req.raw = True
+# 	return req(path=restore_path(path), method="streaming", type=type_)
 
 from services.pcs.filesys import *
 from services.pcs.download import *

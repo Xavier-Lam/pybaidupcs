@@ -109,10 +109,10 @@ def dl():
 		download.progress_callback = lambda x: print("%.2f%%"%x)
 		download(override=args.force, resume=args.resume)
 
-def video_encode():
-	from services.pcs import encode
-	a = encode("1.ts")
-	print(a)
+# def video_encode():
+# 	from services.pcs import encode
+# 	a = encode("1.ts")
+# 	print(a)
 
 @__error_handler
 def info():
@@ -137,7 +137,7 @@ def info():
 def init():
 	""" {help}
 	"""
-	from services.openapiservice import apply_auth
+	from services.openapi import apply_auth
 	for i in apply_auth():
 		print("please wait")
 

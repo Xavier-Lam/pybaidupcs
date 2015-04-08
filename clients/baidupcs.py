@@ -77,7 +77,7 @@ class BaiduPCS(ApiClient):
 				req.params["access_token"] = BaiduPCS.access_token
 				return req.getresponse()
 		except Exception as e:
-			logging.error(str(e))
+			logging.error(str(e) + "=>{req}".format(req=req))
 			raise HTTPException("unexpect response.", e)
 		error = BaiduPCSException(resp.status, msg["error_code"], msg["error_msg"])
 		logging.warning("{error}=>({req})".format(error=str(error), req=req))
