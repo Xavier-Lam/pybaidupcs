@@ -1,6 +1,7 @@
 #encoding:utf8
+import json
 from clients import BaiduPCS, BaiduPCSException
-from services.pcs import restore_path
+from services.pcs import restore_path, safe_path
 
 __all__ = [
 	"delete",
@@ -11,13 +12,15 @@ __all__ = [
 	"move"
 ]
 
-def delete(path, force=False):
+def delete(paths, force=False):
 	"""
-	delete file or directory, force:ignore nonexistent files
+	delete files or directories, force:ignore nonexistent files
 	"""
+	paths = paths if isinstance(paths, list) else [paths]
+	params = [{"path": restore_path(path)} for path in paths]
 	client = BaiduPCS()
 	try:
-		return client.file.post(method="delete", path=restore_path(path))
+		return client.file.post(method="delete", param=json.dumps({"list":params}))
 	except BaiduPCSException as e:
 		if not force or e.status != 404:
 			raise e
@@ -46,7 +49,10 @@ def listfiles(path):
 	"""
 	client = BaiduPCS()
 	resp = client.file.get(method="list", path=restore_path(path))
-	return resp["list"]
+	res = resp["list"]
+	for f in res:
+		f["path"] = safe_path(f["path"])
+	return res
 
 def mkdir(path):
 	"""

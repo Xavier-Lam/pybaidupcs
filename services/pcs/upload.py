@@ -4,7 +4,7 @@ import json
 from math import ceil
 from hashlib import md5
 import os
-from clients import BaiduPCS, BaiduPCSException
+from clients import File, BaiduPCS, BaiduPCSException
 from common import CloseableClass
 from config import config
 from services.pcs import hashfile, restore_path, temp_file

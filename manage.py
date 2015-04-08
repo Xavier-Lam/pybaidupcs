@@ -123,8 +123,16 @@ def info():
 	parser.add_argument("filepath", help="file or directory path")
 	args, _ = parser.parse_known_args(argv[2:])
 
-	from services.pcs import fileinfo
-	print(fileinfo(args.filepath))
+	from services.pcs import fileinfo, safe_path
+	f = fileinfo(args.filepath)
+	print("{0:20}\t{1}".format("path", safe_path(f["path"])))
+	print("{0:20}\t{1}".format("directory", bool(f["isdir"])))
+	print("{0:20}\t{1}".format("sub directory", bool(f["ifhassubdir"])))
+	print("{0:20}\t{1}".format("size", bytes2human(f["size"])))
+	print("{0:20}\t{1}".format("create_time", 
+		time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(f["ctime"]))))
+	print("{0:20}\t{1}".format("modify_time", 
+		time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(f["mtime"]))))
 
 def init():
 	""" {help}
@@ -185,24 +193,26 @@ def mv():
 @__error_handler
 def rm():
 	""" {help}
-	{usageprefix} rm [OPTION] FILEPATH
+	{usageprefix} rm [OPTION] FILEPATHS
 	WARNING: files are under {pathprefix}"""
 	parser = ArgumentParser(usage=rm.__doc__)
 	parser.add_argument("-f", "--force", action="store_true", 
 		help="ignore nonexistent files")
-	parser.add_argument("filepath", help="file or directory path")
+	parser.add_argument("filepaths", help="file or directory path", nargs="+")
 	args, _ = parser.parse_known_args(argv[2:])
 
 	from services.pcs import delete
-	delete(args.filepath, args.force)
+	delete(args.filepaths, args.force)
 
 def test():
 	""" {help}
 	{usageprefix} test
 	"""
+	import logging
 	from unittest import TestLoader, TextTestRunner
-	# from tests import OpenApiTest, FileSysTest, UploadTest
+	print("sometimes these tests may not pass. I don't know why...")
 	TextTestRunner(verbosity=2).run(TestLoader().discover("tests"))
+	logging.info("test ends")
 
 @__error_handler
 def upload():

@@ -48,7 +48,7 @@ class BaiduOpenApi(ApiClient):
 			msg = eval(resp.read())
 		except Exception as e:
 			logging.error(str(e))
-			raise HTTPException("unexcept response.", e)
+			raise HTTPException("unexpect response.", e)
 		error = BaiduOpenApiException(resp.status, **msg)
 		logging.warning("{error}=>({req})".format(error=str(error), req=req))
 		raise error

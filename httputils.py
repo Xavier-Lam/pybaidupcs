@@ -39,21 +39,21 @@ def encode_multipart_formdata(fields=None, files=None):
 	boundary = boundary_generate()
 	L = []
 	for (key, value) in fields or []:
-		L.append(bytes("--" + boundary,"ASCII"))
-		L.append(bytes('Content-Disposition: form-data; name="%s"' % key,"ASCII"))
+		L.append(bytes("--" + boundary,"utf8"))
+		L.append(bytes('Content-Disposition: form-data; name="%s"' % key,"utf8"))
 		L.append(b'')
-		L.append(bytes(str(value),"ASCII"))
+		L.append(bytes(str(value),"utf8"))
 	for (key, filename, value) in files or []:
-		L.append(bytes('--' + boundary,"ASCII"))
+		L.append(bytes('--' + boundary,"utf8"))
 		L.append(bytes('Content-Disposition: form-data; name="%s"; filename="%s"' 
-			% (key, filename),"ASCII", "backslashreplace"))
-		L.append(bytes('Content-Type: %s' % get_contenttype(filename),"ASCII", 
+			% (key, filename),"utf8", "backslashreplace"))
+		L.append(bytes('Content-Type: %s' % get_contenttype(filename),"utf8", 
 			"backslashreplace"))
 		L.append(b'')
 		L.append(value)
-	L.append(bytes('--' + boundary + '--',"ASCII"))
+	L.append(bytes('--' + boundary + '--',"utf8"))
 	L.append(b'')
-	body = bytes("\r\n","ASCII").join(L)
+	body = bytes("\r\n","utf8").join(L)
 	# content_type = 'multipart/form-data; boundary=' + boundary
 	return body, boundary
 

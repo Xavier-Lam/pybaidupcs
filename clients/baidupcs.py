@@ -78,7 +78,7 @@ class BaiduPCS(ApiClient):
 				return req.getresponse()
 		except Exception as e:
 			logging.error(str(e))
-			raise HTTPException("unexcept response.", e)
+			raise HTTPException("unexpect response.", e)
 		error = BaiduPCSException(resp.status, msg["error_code"], msg["error_msg"])
 		logging.warning("{error}=>({req})".format(error=str(error), req=req))
 		# retry when server error

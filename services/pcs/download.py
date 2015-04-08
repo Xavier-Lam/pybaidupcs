@@ -61,30 +61,10 @@ class Download(CloseableClass):
 		"""
 		for start_bytes in range(self.start, self.filesize, config.DOWNLOADPIECE):
 			if self.progress_callback:
-				self.progress_callback(start_bytes/self.filesize)
-			yield request_piece(start_bytes, start_bytes+config.DOWNLOADPIECE, 
+				self.progress_callback(start_bytes/self.filesize*100)
+			yield request_piece(start_bytes, start_bytes+config.DOWNLOADPIECE-1, 
 				self.downloadpath)
 
 	def close(self):
 		if self.f:
 			self.f.close()
-
-# def download(downloadpath, localpath, progress_callback):
-# 	"""
-# 	download controller
-# 	"""
-# 	# get file size
-# 	info = fileinfo(downloadpath)
-# 	size = info["size"]
-# 	if os.path.isfile(localpath):
-# 		raise ApplicationException("local file already exists!")
-# 	with open(localpath, "ab") as f:
-# 		for start_bytes in range(0, size, config.DOWNLOADPIECE):
-# 			progress_callback(start_bytes/size)
-# 			f.write(request_piece(start_bytes, start_bytes+config.DOWNLOADPIECE, downloadpath))
-
-# def merge_localfile(files, localpath):
-# 	"""
-# 	merge localfile
-# 	"""
-# 	pass

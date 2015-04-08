@@ -38,9 +38,9 @@ class RequestBase:
 		because we may call this method again in error handler
 		"""
 		with HTTPSConnection(self.base_url) as conn:
-			conn.request(self.method, self.route + params_generate(**self.params), 
-				headers=self.headers, body=self.body)
 			try:
+				conn.request(self.method, self.route + params_generate(**self.params), 
+					headers=self.headers, body=self.body)
 				resp = conn.getresponse()
 			except TimeoutError:
 				return self.getresponse()

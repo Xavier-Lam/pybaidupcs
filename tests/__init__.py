@@ -12,7 +12,7 @@ oldHandler = logging.getLogger().handlers[0]
 newHandler = logging.FileHandler(config.TESTLOGFILE)
 newHandler.setFormatter(oldHandler.formatter)
 logging.getLogger().handlers[0] = newHandler
-
+logging.info("test starts")
 
 __all__ = ["BaseTest"]
 
