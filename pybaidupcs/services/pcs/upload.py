@@ -1,5 +1,5 @@
 #encoding:utf8
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 import json
 from math import ceil
 from hashlib import md5
@@ -11,6 +11,7 @@ from services.pcs import hashfile, restore_path, temp_file
 
 __all__ = [
 	"check_rapidupload",
+	"rapidupload_info",
 	"Upload"
 ]
 
@@ -51,6 +52,23 @@ def rapidupload_info(localpath):
 			res["c_md5"], res["s_md5"] = hashfile(f)
 	return res
 
+def _logger(func):
+	"""
+	log upload
+	"""
+	from functools import wraps
+	@wraps(func)
+	def decorated_func(*args, **kwargs):
+		import logging
+		logging.info("upload begin")
+		try:
+			resp = func(*args, **kwargs)
+		except Exception as e:
+			logging.error("UNEXPECT EXIT! {error}".format(error=e))
+			raise e
+		logging.info("upload complete")
+		return resp
+
 class Upload(CloseableClass):
 	"""
 	upload files
@@ -63,7 +81,7 @@ class Upload(CloseableClass):
 		# opened file
 		self.f = None
 		# md5 list of slices
-		self.md5s = OrderedDict()
+		self.md5s = []
 		# temp md5 list(yet not check sum)
 		self.tmp_md5s = []
 		# temp sum of tmp_md5s
@@ -78,16 +96,22 @@ class Upload(CloseableClass):
 		info["uploadpath"] = self.uploadpath
 		if force: info["ondup"] = "overwrite"
 		if not rapid or not check_rapidupload(**info):
-			self.filesize = os.stat(self.localpath).st_size
-			self.uploadsize = 0
 			# open file and read
-			self.f = open(self.localpath, "rb")
+			self._prepare()
 			# judge upload method
 			if self.filesize > config.UPLOADPIECE:
-				self.__multiupload()
+				self._multiupload()
 				return check_rapidupload(**info)
 			else:
-				return self.__singleupload()
+				return self._singleupload()
+
+	def _prepare(self):
+		"""
+		prepare before upload
+		"""
+		self.filesize = os.stat(self.localpath).st_size
+		self.uploadsize = 0
+		self.f = open(self.localpath, "rb")
 
 	def close(self):
 		"""
@@ -96,14 +120,14 @@ class Upload(CloseableClass):
 		if self.f:
 			self.f.close()
 
-	def __singleupload(self, ondup=None):
+	def _singleupload(self, ondup=None):
 		"""
 		upload file direct
 		ondup = overwrite or newcopy
 		"""
 		return self.__upload(self.f.read(), self.uploadpath, ondup)
 
-	def __multiupload(self, ondup=None):
+	def _multiupload(self, ondup=None):
 		"""
 		split file into parts and upload
 		ondup = overwrite or newcopy
@@ -167,10 +191,9 @@ class Upload(CloseableClass):
 		"""
 		flush temp md5s cache
 		"""
-		if len(self.tmp_md5s) == 1:
-			self.md5s[self.tmp_md5s[0]] == []
-		else:
-			self.md5s[self.tmp_md5sum.hexdigest()] = self.tmp_md5s
+		md5_tuple = (self.tmp_md5s[0], []) if len(self.tmp_md5s) == 1 \
+			else (self.tmp_md5sum.hexdigest(), self.tmp_md5s)
+		self.md5s.append(md5_tuple)
 		self.tmp_md5sum = md5()
 		self.tmp_md5s = []
 
@@ -178,11 +201,12 @@ class Upload(CloseableClass):
 		"""
 		yield a slice of md5s for combine
 		"""
-		for md5s in self.md5s.values():
-			if md5s:
-				yield md5s
-		if len(self.md5s.keys()) > 1:
-			yield self.md5s.keys()
+		for small_pieces_sum, small_pieces in self.md5s:
+			if small_pieces:
+				yield small_pieces
+		big_piece = list(map(lambda kv: kv[0], self.md5s))
+		if len(big_piece) > 1:
+			yield big_piece
 
 	def __merge_file(self):
 		"""

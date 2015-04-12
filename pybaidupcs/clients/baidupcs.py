@@ -83,7 +83,7 @@ class BaiduPCS(ApiClient):
 		logging.warning("{error}=>({req})".format(error=str(error), req=req))
 		# retry when server error
 		if resp.status > 500:
-			req.getresponse()
+			return req.getresponse()
 		raise error
 
 	def __repr__(self):

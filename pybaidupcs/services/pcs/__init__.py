@@ -43,13 +43,15 @@ class temp_file(object):
 	"""
 	generate a temp file path and delete file when exit
 	"""
-	def __enter__(self):
+	def __init__(self):
 		path = config.TEMPFILEFOLDER + "/__tmp_" + str(time.time()).replace('.', '_')
-		self.__path = path
-		return self.__path
+		self.path = path
+
+	def __enter__(self):
+		return self.path
 
 	def __exit__(self, type, value, traceback):
-		delete(self.__path, True)
+		delete(self.path, True)
 
 def hashfile(file, blocksize=4*1024*1024):
 	"""

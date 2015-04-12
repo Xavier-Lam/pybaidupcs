@@ -19,6 +19,23 @@ def request_piece(start_bytes, end_bytes, path):
 		.format(start=start_bytes, end=end_bytes)
 	return req(method="download", path=restore_path(path))
 
+def _logger(func):
+	"""
+	log download
+	"""
+	from functools import wraps
+	@wraps(func)
+	def decorated_func(*args, **kwargs):
+		import logging
+		logging.info("download begin")
+		try:
+			resp = func(*args, **kwargs)
+		except Exception as e:
+			logging.error("UNEXPECT EXIT! {error}".format(error=e))
+			raise e
+		logging.info("download complete")
+		return resp
+
 class Download(CloseableClass):
 	"""
 	Download file from baiduyun

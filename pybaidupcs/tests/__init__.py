@@ -34,6 +34,3 @@ class BaseTest(TestCase):
 from tests.test_filesys import *
 from tests.test_openapi import *
 from tests.test_upload import *
-
-# def run_test():
-# 	main()
